@@ -89,7 +89,6 @@ namespace JammerDash.Editor
         public InputField source;
         
         public Slider hp;
-        public Slider size;
 
         [Header("Post Processing")]
         public PostProcessVolume vol;
@@ -435,7 +434,6 @@ namespace JammerDash.Editor
                 romaji.text = sceneData.romanizedName;
                 romajiArtist.text = sceneData.romanizedArtist;
                 hp.value = sceneData.playerHP;
-                size.value = sceneData.boxSize;
                 offsetmarker.text = sceneData.offset.ToString();
             }
             else
@@ -684,7 +682,6 @@ private void OnVideoPrepared(VideoPlayer source)
             GameObject[] beats = GameObject.FindGameObjectsWithTag("Beat");
 
             bgPic.SetActive(bgImage.isOn);
-            size.gameObject.GetComponentInChildren<Text>().text = $"{LocalizationSettings.StringDatabase.GetLocalizedString("lang", "Cube size")}: {size.value}x";
             hp.gameObject.GetComponentInChildren<Text>().text = $"{LocalizationSettings.StringDatabase.GetLocalizedString("lang", "Player HP")}: {hp.value}";
 
             if (Input.GetKey(KeybindingManager.changeLongCubeSize) && selectedObject != null && selectedObject.gameObject.name.Contains("hitter02"))
@@ -818,7 +815,7 @@ private void OnVideoPrepared(VideoPlayer source)
             audio = AudioManager.Instance.source;
             audio.pitch = Time.timeScale;
             videoPlayer.playbackSpeed = Time.timeScale;
-            PlayerEditorMovement player = GameObject.FindObjectOfType<PlayerEditorMovement>();
+            PlayerEditorMovement player = GameObject.FindFirstObjectByType<PlayerEditorMovement>();
 
 
 
@@ -1183,7 +1180,7 @@ else if (item.CompareTag("LongCube"))
         public void Play()
         {
 
-            PlayerEditorMovement player = GameObject.FindObjectOfType<PlayerEditorMovement>();
+            PlayerEditorMovement player = GameObject.FindFirstObjectByType<PlayerEditorMovement>();
             if (!audio.isPlaying && !player.enabled)
             {
                 audio.Play();
@@ -1197,7 +1194,7 @@ else if (item.CompareTag("LongCube"))
                 videoPlayer.time = 0f;
             }
             player.enabled = !player.enabled;
-            CameraController cam = GameObject.FindObjectOfType<CameraController>();
+            CameraController cam = GameObject.FindFirstObjectByType<CameraController>();
             cam.enabled = !cam.enabled;
         }
 
@@ -1593,7 +1590,7 @@ else if (item.CompareTag("LongCube"))
             romanizedName = romaji != null ? romaji.text : "Unknown",
             romanizedArtist = romajiArtist != null ? romajiArtist.text : "Unknown",
             playerHP = hp != null ? (int)hp.value : 300,
-            boxSize = size != null ? size.value : 1,
+            boxSize = 1,
             artist = songArtist != null ? songArtist.text : "Unknown",
             songName = customSongName.text,
             offset = float.TryParse(offsetmarker != null ? offsetmarker.text : "0", out float offsetValue) ? offsetValue : 0,

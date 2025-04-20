@@ -284,7 +284,6 @@ namespace JammerDash.Menus.Play
         levelBPM = GameObject.Find("infoBPM").GetComponent<Text>();
         levelObj = GameObject.Find("infoobj").GetComponent<Text>();
         hp = GameObject.Find("health").GetComponent<Text>();
-        size = GameObject.Find("cubeSize").GetComponent<Text>();
         bonus = GameObject.Find("levelbonusinfoi").GetComponent<Text>();
         slider = GameObject.Find("sliderDiff").GetComponent<Slider>();
 
@@ -313,7 +312,6 @@ namespace JammerDash.Menus.Play
         float duration = 0.1f;  // Duration for the lerp
         float masterPitch;
         Mods.instance.master.GetFloat("MasterPitch", out masterPitch);
-        float elapsedTime = 0f;
         float startValue = slider.value * CustomLevelDataManager.Instance.scoreMultiplier * masterPitch;
         float targetValue = c * CustomLevelDataManager.Instance.scoreMultiplier * masterPitch;
 
@@ -418,7 +416,6 @@ public IEnumerator UpdateDifficultySlider(float targetValue, float duration)
                 diff = GameObject.Find("infodiff").GetComponent<Text>();
                 levelObj = GameObject.Find("infoobj").GetComponent<Text>();
                 hp = GameObject.Find("health").GetComponent<Text>();
-                size = GameObject.Find("cubeSize").GetComponent<Text>();
                 bonus = GameObject.Find("levelbonusinfoi").GetComponent<Text>();
                 slider = GameObject.Find("sliderDiff").GetComponent<Slider>();
                 new WaitUntil(() => GetComponent<leaderboard>().panelContainer != null);
@@ -456,7 +453,6 @@ public IEnumerator UpdateDifficultySlider(float targetValue, float duration)
         float duration = 0.1f;  // Duration for the lerp
         float masterPitch;
         Mods.instance.master.GetFloat("MasterPitch", out masterPitch);
-        float elapsedTime = 0f;
         float startValue = slider.value * CustomLevelDataManager.Instance.scoreMultiplier * masterPitch;
         float targetValue = c * CustomLevelDataManager.Instance.scoreMultiplier * masterPitch;
         
@@ -525,15 +521,12 @@ public IEnumerator UpdateDifficultySlider(float targetValue, float duration)
 {
     // Initialize variables for hp and size, default to 0 if parsing fails
     int hpValue = 0;
-    int sizeValue = 0;
 
-    // Extract numeric part of hp.text and size.text using a simple method (remove non-numeric characters)
+    // Extract numeric part of hp.text and using a simple method (remove non-numeric characters)
     hpValue = ExtractNumberFromString(hp.text);
-    sizeValue = ExtractNumberFromString(size.text);
 
     // Log the extracted values to verify
     Debug.Log("Extracted HP: " + hpValue);
-    Debug.Log("Extracted Size: " + sizeValue);
 
     Task<float> difficultyTask = Task.Run(() => 
     {
@@ -541,8 +534,8 @@ public IEnumerator UpdateDifficultySlider(float targetValue, float duration)
             cubes: cubePositions,  // Pass the appropriate cubes
             saws: sawPositions,   // Pass the appropriate saws
             longCubes: longCubePositions,  // Pass the appropriate long cubes
-            hp: hpValue,  // Use the extracted health value     
-            size: sizeValue,  // Use the extracted size value
+            hp: hpValue,  // Use the extracted health value    
+            1,
             bpm: customLevel.sceneData.bpm,  // Use level BPM
             updateLoadingText: (text) => { Debug.Log(text); }, // Update loading text during the process
             levelTime: customLevel.sceneData.songLength, // Use level length
@@ -630,7 +623,6 @@ private int ExtractNumberFromString(string input)
             diff.text = $"{difficulty:F2}"; 	
             levelObj.text = $"{LocalizationSettings.StringDatabase.GetLocalizedString("lang", "Objects")}: {(data.cubePositions.Count + data.sawPositions.Count + data.longCubePositions.Count):N0} ({data.cubePositions.Count}, {data.sawPositions.Count}, {data.longCubePositions.Count})";
             hp.text = $"{LocalizationSettings.StringDatabase.GetLocalizedString("lang", "Player HP")}: {data.playerHP}";
-            size.text = $"{LocalizationSettings.StringDatabase.GetLocalizedString("lang", "Object size")}: {data.boxSize}";
         }
 
         // Format and return the bonus information as a string

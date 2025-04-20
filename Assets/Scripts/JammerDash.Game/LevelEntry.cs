@@ -76,24 +76,22 @@ namespace JammerDash.Game
             }
             song.Stop();
             player.enabled = true;
-            new WaitForSecondsRealtime(0.5f);
+            string path = Path.Combine(Main.gamePath, "levels", "extracted", $"{CustomLevelDataManager.Instance.ID} - {CustomLevelDataManager.Instance.levelName}", "backgroundVideo.mp4");
             
-            yield return new WaitForSeconds(3f); // Delay for 4 seconds
-
-            started = true;
-            player.enabled = true; // Enable the player movement after the delay
             
+            TexturePack.Instance.UpdateTexture();
+            yield return new WaitForSeconds(3f); // Delay for 3 seconds
             song.Play(); 
-            if (File.Exists(Path.Combine(Main.gamePath, "levels", "extracted", $"{CustomLevelDataManager.Instance.ID} - {CustomLevelDataManager.Instance.levelName}", "backgroundVideo.mp4")))
+            started = true;
+            if (File.Exists(path))
             {
                 image.gameObject.SetActive(true);
                 image.texture = video.targetTexture;
-                video.url = Path.Combine(Main.gamePath, "levels", "extracted", $"{CustomLevelDataManager.Instance.ID} - {CustomLevelDataManager.Instance.levelName}", "backgroundVideo.mp4");
+                video.url = path;
                 video.Play();
             }
-            infotext.text = $"{CustomLevelDataManager.Instance.data.artist} - {CustomLevelDataManager.Instance.data.songName}";
             
-            TexturePack.Instance.UpdateTexture();
+            infotext.text = $"{CustomLevelDataManager.Instance.data.artist} - {CustomLevelDataManager.Instance.data.songName}";
 
         }
     }

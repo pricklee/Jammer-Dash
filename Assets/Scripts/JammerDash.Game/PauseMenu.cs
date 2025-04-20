@@ -33,7 +33,7 @@ namespace JammerDash.Game
         {
             music = AudioManager.Instance.source;
             SettingsData sd = SettingsFileHandler.LoadSettingsFromFile();
-            dim.value = sd.dim;
+            dim.value = sd.dim * 100;
            
                 string levelName = CustomLevelDataManager.Instance.artist + " - " + CustomLevelDataManager.Instance.levelName;
                 string creator = $"{LocalizationSettings.StringDatabase.GetLocalizedString("lang", "mapped by")} {CustomLevelDataManager.Instance.creator}";

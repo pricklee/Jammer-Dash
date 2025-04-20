@@ -26,7 +26,6 @@ namespace JammerDash.Tech
         public float diff;
         public int ID;
         public int playerhp;
-        public float cubesize;
         public bool sceneLoaded = false;
         public SceneData data;
         public float scoreMultiplier = 1f;
@@ -71,7 +70,6 @@ namespace JammerDash.Tech
                 artist = sceneData.artist;
                 ID = sceneData.ID;
                 playerhp = sceneData.playerHP != 0 ? sceneData.playerHP : 300;
-                cubesize = sceneData.boxSize != 0 ? sceneData.boxSize : 1;
                 sceneLoaded = true; // Set the flag to true
                 SceneManager.sceneLoaded += OnSceneLoaded;
                 Addressables.LoadSceneAsync("Assets/LevelDefault.unity", LoadSceneMode.Single);
@@ -99,12 +97,12 @@ namespace JammerDash.Tech
                 if (SceneManager.GetActiveScene().name == "SampleScene")
                 {
                     OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
-                    EditorManager manager = FindObjectOfType<EditorManager>();
+                    EditorManager manager = FindFirstObjectByType<EditorManager>();
                     using (UnityWebRequest www = UnityWebRequestTexture.GetTexture(Path.Combine(Main.gamePath, "scenes", sceneData.ID + " - " + name, "bgImage.png")))
                     {
                         if (www.isDone)
                         {
-                            FindObjectOfType<RawImage>().gameObject.SetActive(true);
+                            FindFirstObjectByType<RawImage>().gameObject.SetActive(true);
                             manager.bgImage.isOn = true;
                             manager.bgPreview.texture = DownloadHandlerTexture.GetContent(www);
                         }
@@ -222,7 +220,7 @@ namespace JammerDash.Tech
         data = sceneData;
         Debug.Log(sceneData.cubePositions.Count);
 
-        itemUnused[] obj = FindObjectsOfType<itemUnused>();
+        itemUnused[] obj = FindObjectsByType<itemUnused>(FindObjectsSortMode.None);
         foreach (itemUnused gobject in obj)
         {
             Destroy(gobject.gameObject);
@@ -261,7 +259,13 @@ namespace JammerDash.Tech
                     modifiedCubePos.x = modifiedCubePos.x / 7 * 5;
                 }
                
-
+                if (modifiedCubePos.y > 4) {
+                    modifiedCubePos = new Vector3(modifiedCubePos.x, 4, modifiedCubePos.z);
+                }
+                
+                if (modifiedCubePos.y < -1) {
+                    modifiedCubePos = new Vector3(modifiedCubePos.x, -1, modifiedCubePos.z);
+                }
                 int originalCubeType;
                 if (sceneData.cubeType == null || sceneData.cubeType.Count <= sceneData.cubePositions.IndexOf(group.Value[i]))
                 {
@@ -374,6 +378,17 @@ namespace JammerDash.Tech
                 {
                     modifiedLongCubePos.x = modifiedLongCubePos.x / 7 * 5;
                 }
+
+                if (modifiedLongCubePos.y != (int)modifiedLongCubePos.y) {
+                    modifiedLongCubePos.y = (int)modifiedLongCubePos.y;
+                }
+                if (modifiedLongCubePos.y > 4) {
+                    modifiedLongCubePos = new Vector3(modifiedLongCubePos.x, 4, modifiedLongCubePos.z);
+                }
+                
+                if (modifiedLongCubePos.y < -1) {
+                    modifiedLongCubePos = new Vector3(modifiedLongCubePos.x, -1, modifiedLongCubePos.z);
+                }
                 float width = sceneData.longCubeWidth[sceneData.longCubePositions.IndexOf(longCubePos)];
                 GameObject longCubeObject = Instantiate(Resources.Load<GameObject>("hitter02"), modifiedLongCubePos, Quaternion.identity);
                 SpriteRenderer longCubeRenderer = longCubeObject.GetComponent<SpriteRenderer>();
@@ -398,7 +413,7 @@ namespace JammerDash.Tech
 
         StartCoroutine(LoadImage(Path.Combine(Main.gamePath, "levels", "extracted", $"{ID} - {levelName}", "bgImage.png"), null));
 
-        Camera[] cams = FindObjectsOfType<Camera>();
+        Camera[] cams = FindObjectsByType<Camera>(FindObjectsSortMode.None);
         foreach (Camera cam in cams)
         {
             cam.backgroundColor = sceneData.defBGColor;

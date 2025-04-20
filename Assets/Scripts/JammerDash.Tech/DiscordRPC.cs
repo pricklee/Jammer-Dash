@@ -33,8 +33,7 @@ namespace JammerDash.Tech
                     {
                         LargeImage = "logo",
                         SmallImage = "shine",
-                        LargeText = $"@{Account.Instance.username} | Rank: #N/A",
-                        SmallText = $"{Mathf.RoundToInt(Difficulty.Calculator.CalculateSP("scores.dat"))}sp | {Difficulty.Calculator.CalculateAccuracy("scores.dat"):0.00}% | lv{Account.Instance.level}"
+                        SmallText = $"{Mathf.RoundToInt(Difficulty.Calculator.CalculateSP("scores.dat"))}sp | {Difficulty.Calculator.CalculateAccuracy("scores.dat"):0.00}%"
                     },
                     Timestamps = new Discord.ActivityTimestamps()
                     {

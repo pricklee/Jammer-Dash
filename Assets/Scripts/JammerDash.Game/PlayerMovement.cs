@@ -298,11 +298,11 @@ private Camera mainCam;
         float pitch;
         music.outputAudioMixerGroup.audioMixer.GetFloat("MasterPitch", out pitch);
         
-    PauseMenu pauseMenu = FindObjectOfType<PauseMenu>();
+    PauseMenu pauseMenu = FindFirstObjectByType<PauseMenu>();
         if (music.isPlaying)
         {
-            float adjustedSpeed = (hasEasyMode ? 5f : 7f);
-            float targetX = (music.timeSamples / (float)music.clip.frequency) * adjustedSpeed;
+            float adjustedSpeed = (hasEasyMode ? 5f : 7f) * pitch;
+            float targetX = music.time * adjustedSpeed;
 
 
 
@@ -395,7 +395,7 @@ private Camera mainCam;
         (float)counter.accCount / Total * 100
     ).PerformanceScore;
 
-    if (_performanceScore == float.PositiveInfinity || _performanceScore == float.NegativeInfinity || _performanceScore == float.NaN) {
+    if (_performanceScore == float.PositiveInfinity || _performanceScore == float.NegativeInfinity || float.IsNaN(_performanceScore) || _performanceScore < 0) {
         _performanceScore = 0;
     }
 
@@ -942,6 +942,10 @@ private void AnimateKey(int index, ref int counter)
             enabled = false;
         }
 
+
+        private bool isHoldingKey1 = false;
+        private GameObject currentLongCube = null;
+
         private void OnTriggerEnter2D(Collider2D collision)
         {
             if (GetComponent<BoxCollider2D>().IsTouching(collision))
@@ -989,95 +993,92 @@ private void AnimateKey(int index, ref int counter)
             
         }
 
-       private void OnTriggerExit2D(Collider2D collision)
+      private void OnTriggerExit2D(Collider2D collision)
+{
+    // Regular cubes missed
+    if (collision.tag == "Cubes" && activeCubes.Contains(collision.gameObject) && health > 0)
+    {
+        activeCubes.Remove(collision.gameObject);
+
+        if (!passedCubes.Contains(collision.gameObject) && !missedCubes.Contains(collision.gameObject))
         {
-            if (collision.tag == "Cubes" && activeCubes.Contains(collision.gameObject) && health > 0)
-            {
-                activeCubes.Remove(collision.gameObject);
+            if (AudioManager.Instance != null && AudioManager.Instance.hits)
+                ShowBadText();
 
-                if (!passedCubes.Contains(collision.gameObject) && !missedCubes.Contains(collision.gameObject))
-                {
-                    if (AudioManager.Instance != null)
-                    {
-                        if (AudioManager.Instance.hits)
-                        {
-                            ShowBadText();
-                        }
-                    }
-                    StartCoroutine(ChangeTextCombo());
-                    Total += 5;
-                    passedCubes.Add(collision.gameObject);
-                }
-
-
-            }
-
-                if (collision.tag == "Cubes" && !passedCubes.Contains(collision.gameObject)) {
-              
-                    if (AudioManager.Instance != null)
-                    {
-                        if (AudioManager.Instance.hits)
-                        {
-                            ShowBadText();
-                        }
-                    }
-                    health -= 20;
-                    Total += 5;
-                    if (!missedCubes.Contains(collision.gameObject))
-                    {
-                        
-                        StartCoroutine(ChangeTextCombo());
-                    }
-                }
-                if (collision.gameObject.name.Contains("hitter02") && collision.transform.position.y != transform.position.y && !activeCubes.Contains(collision.gameObject)) {
-                    if (AudioManager.Instance != null)
-                    {
-                        if (AudioManager.Instance.hits)
-                        {
-                            ShowBadText();
-                        }
-                    }      health -= 20;
-                    Total += 5;             
-                }
-            if (collision.gameObject.name.Contains("hitter02") && activeCubes.Contains(collision.gameObject))
-            {   if (bufferActive && collision.transform.position.y == transform.position.y && (Input.GetKey(KeybindingManager.hit1) || Input.GetKey(KeybindingManager.hit2) || (SettingsFileHandler.LoadSettingsFromFile().mouseHits && (Input.GetMouseButton(0) || Input.GetMouseButton(1)))))  
-                {
-                    activeCubes.Remove(collision.gameObject);
-                    DestroyCube(collision.gameObject);
-                    sfxS.PlayOneShot(hitSounds[6]);
-                    StartCoroutine(ChangeScore(0f, new RaycastHit2D()));
-                    health += 10;
-                    combo++;
-                    if (highestCombo < combo)
-                    {
-                        highestCombo++;
-                    }
-                    new WaitForEndOfFrame();
-                    
-                    bufferActive = false;
-                }
-                else if (!bufferActive)
-                {
-                    if (!passedCubes.Contains(collision.gameObject) || collision.transform.position.y != transform.position.y)
-                {
-                    if (AudioManager.Instance != null)
-                    {
-                        if (AudioManager.Instance.hits)
-                        {
-                            ShowBadText();
-                        }
-                    }
-                    health -= 20;
-                    Total += 5;
-                    misses++;
-                    activeCubes.Remove(collision.gameObject);
-                }
-                    bufferActive = false;
-
-                }
-            }
-            
+            StartCoroutine(ChangeTextCombo());
+            Total += 5;
+            passedCubes.Add(collision.gameObject);
         }
+    }
+
+    // Handle normal cube miss (not hitter02)
+    if (collision.tag == "Cubes" && !passedCubes.Contains(collision.gameObject))
+    {
+        if (AudioManager.Instance != null && AudioManager.Instance.hits)
+            ShowBadText();
+
+        health -= 20;
+        Total += 5;
+
+        if (!missedCubes.Contains(collision.gameObject))
+            StartCoroutine(ChangeTextCombo());
+    }
+
+  GameObject cube = collision.gameObject;
+
+    if (!cube.name.Contains("hitter02") && !cube.CompareTag("Cubes")) return;
+
+    // Already handled?
+    if (passedCubes.Contains(cube) || missedCubes.Contains(cube)) return;
+
+    bool isActive = activeCubes.Contains(cube);
+    bool isAlignedY = cube.transform.position.y == transform.position.y;
+    bool isKeyDown = Input.GetKey(KeybindingManager.hit1) || Input.GetKey(KeybindingManager.hit2) || 
+                     (SettingsFileHandler.LoadSettingsFromFile().mouseHits && (Input.GetMouseButton(0) || Input.GetMouseButton(1)));
+
+    if (isActive && cube.name.Contains("hitter02"))
+    {
+        if (bufferActive && isAlignedY && isKeyDown)
+        {
+            // Valid hit
+            activeCubes.Remove(cube);
+            DestroyCube(cube);
+            sfxS.PlayOneShot(hitSounds[6]);
+            StartCoroutine(ChangeScore(0f, new RaycastHit2D()));
+            health += 10;
+            combo++;
+            if (highestCombo < combo) highestCombo++;
+            bufferActive = false;
+        }
+        else
+        {
+            // Miss due to wrong key or position
+            activeCubes.Remove(cube);
+            misses++;
+            ShowBadText();
+            health -= 20;
+            Total += 5;
+            missedCubes.Add(cube);
+            bufferActive = false;
+            return;
+        }
+    }
+
+    // Long cube passed through without any interaction = fail it
+if (collision.name.Contains("hitter02") && !interactedCubes.Contains(collision.gameObject))
+{
+    if (!missedCubes.Contains(collision.gameObject))
+    {
+        missedCubes.Add(collision.gameObject);
+        ShowBadText();
+        health -= 20;
+        Total += 5;
+        misses++;
+    }
+    return;
+}
+
+    }
 
 
 
@@ -1093,7 +1094,9 @@ private void AnimateKey(int index, ref int counter)
 
             yield return null;
         }
+private HashSet<GameObject> interactedCubes = new HashSet<GameObject>();
 
+private bool isHoldingLongNote = false;
 
         private void OnTriggerStay2D(Collider2D collision)
         {if (GetComponent<BoxCollider2D>().IsTouching(collision))
@@ -1105,139 +1108,74 @@ private void AnimateKey(int index, ref int counter)
                     health -= int.MaxValue;
                 }
             }
-            if (collision.gameObject.name.Contains("hitter02") && collision.transform.position.y == transform.position.y)
-            {
-            float distance = Vector2.Distance(collision.transform.position, transform.position);
-            float middle = Mathf.Abs(collision.offset.x);
+        if (collision.gameObject.name.Contains("hitter02") && collision.transform.position.y == transform.position.y)
+{
+    float distance = Vector2.Distance(collision.transform.position, transform.position);
+    float middle = Mathf.Abs(collision.offset.x);
 
-            
-if (SettingsFileHandler.LoadSettingsFromFile().mouseHits) if(Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1)) {
-    bufferActive = false; // Reset bufferActive flag
-                if (!bufferActive)
-                {
-                sfxS.PlayOneShot(hitSounds[1]);
-                bufferActive = true;
+    // If holding key and not already holding this long note
+    bool keyPressed = Input.GetKey(KeybindingManager.hit1) || Input.GetKey(KeybindingManager.hit2) ||
+                      (SettingsFileHandler.LoadSettingsFromFile().mouseHits && 
+                      (Input.GetMouseButton(0) || Input.GetMouseButton(1)));
 
+    if (keyPressed && !isHoldingLongNote)
+    {
+        isHoldingLongNote = true;
+        bufferActive = true;
+        sfxS.PlayOneShot(hitSounds[1]);
 
-                if (distance < 1)
-                {
-                    combo++;
-                    if (highestCombo < combo)
-                    {
-                    highestCombo++;
-                    }
+        if (distance < 1)
+        {
+            combo++;
+            if (highestCombo < combo) highestCombo++;
+            StartCoroutine(ChangeScore(0f, new RaycastHit2D()));
+            if (AudioManager.Instance?.hits == true)
+                Instantiate(goodTextPrefab, transform.position, Quaternion.identity);
+        }
+        else if (distance < middle && distance >= 1)
+        {
+            sfxS.PlayOneShot(hitSounds[1]);
+            StartCoroutine(ChangeScore(0.30f, new RaycastHit2D()));
+            if (AudioManager.Instance?.hits == true)
+                Instantiate(normalTextPrefab, transform.position, Quaternion.identity);
+        }
+        else
+        {
+            sfxS.PlayOneShot(hitSounds[1]);
+            health -= 20;
+            combo = 0;
+            StartCoroutine(ChangeScore(0.48f, new RaycastHit2D()));
+            if (AudioManager.Instance?.hits == true)
+                Instantiate(okTextPrefab, transform.position, Quaternion.identity);
+        }
 
-                    StartCoroutine(ChangeScore(0f, new RaycastHit2D()));
-                    if (AudioManager.Instance != null && AudioManager.Instance.hits)
-                    {
-                    Instantiate(goodTextPrefab, transform.position, Quaternion.identity);
-                    }
-                    sfxS.PlayOneShot(hitSounds[1]);
-                    Animation anim = combotext.GetComponent<Animation>();
+        // Mark the cube as active for holding
+        if (!activeCubes.Contains(collision.gameObject))
+            activeCubes.Add(collision.gameObject);
 
-                    anim.Stop("comboanim");
-                    anim.Play("comboanim");
-                }
-                else if (distance < middle && distance >= 1)
-                {
-                    sfxS.PlayOneShot(hitSounds[1]);
-                    StartCoroutine(ChangeScore(0.30f, new RaycastHit2D()));
-                    if (AudioManager.Instance != null && AudioManager.Instance.hits)
-                    {
-                    Instantiate(normalTextPrefab, transform.position, Quaternion.identity);
-                    }
-                }
-                else if (distance >= middle)
-                {
-                    sfxS.PlayOneShot(hitSounds[1]);
-                    health -= 20;
-                    combo = 0;
-                    StartCoroutine(ChangeScore(0.48f, new RaycastHit2D()));
-                    if (AudioManager.Instance != null && AudioManager.Instance.hits)
-                    {
-                    Instantiate(okTextPrefab, transform.position, Quaternion.identity);
-                    }
-                }
-                activeCubes.Add(collision.gameObject); // Mark the cube as passed
-                }
+         if (!interactedCubes.Contains(collision.gameObject))
+        interactedCubes.Add(collision.gameObject);
+        currentLongCube = collision.gameObject;
+    }
+
+    // Reset if keys are released
+    if (!keyPressed && isHoldingLongNote)
+    {
+        isHoldingLongNote = false;
+        bufferActive = false;
+
+        // Optional: fade or disable long cube early if they let go too soon
+    }
+
+    if (!isBufferRunning && bufferActive)
+    {
+        StartCoroutine(OnTriggerEnter2DBufferLoop());
+    }
+    else
+    {
+        isBufferRunning = false;
+    }
 }
-            if ((Input.GetKeyDown(KeybindingManager.hit1) || Input.GetKeyDown(KeybindingManager.hit2)) && !isDying && !activeCubes.Contains(collision.gameObject))
-            {
-                bufferActive = false; // Reset bufferActive flag
-                if (!bufferActive)
-                {
-                sfxS.PlayOneShot(hitSounds[1]);
-                bufferActive = true;
-
-
-                if (distance < 1)
-                {
-                    combo++;
-                    if (highestCombo < combo)
-                    {
-                    highestCombo++;
-                    }
-
-                    StartCoroutine(ChangeScore(0f, new RaycastHit2D()));
-                    if (AudioManager.Instance != null && AudioManager.Instance.hits)
-                    {
-                    Instantiate(goodTextPrefab, transform.position, Quaternion.identity);
-                    }
-                    sfxS.PlayOneShot(hitSounds[1]);
-                    Animation anim = combotext.GetComponent<Animation>();
-
-                    anim.Stop("comboanim");
-                    anim.Play("comboanim");
-                }
-                else if (distance < middle && distance >= 1)
-                {
-                    sfxS.PlayOneShot(hitSounds[1]);
-                    StartCoroutine(ChangeScore(0.30f, new RaycastHit2D()));
-                    if (AudioManager.Instance != null && AudioManager.Instance.hits)
-                    {
-                    Instantiate(normalTextPrefab, transform.position, Quaternion.identity);
-                    }
-                }
-                else if (distance >= middle)
-                {
-                    sfxS.PlayOneShot(hitSounds[1]);
-                    health -= 20;
-                    combo = 0;
-                    StartCoroutine(ChangeScore(0.48f, new RaycastHit2D()));
-                    if (AudioManager.Instance != null && AudioManager.Instance.hits)
-                    {
-                    Instantiate(okTextPrefab, transform.position, Quaternion.identity);
-                    }
-                }
-                activeCubes.Add(collision.gameObject); // Mark the cube as passed
-                }
-            }
-
-            if (SettingsFileHandler.LoadSettingsFromFile().mouseHits) if(Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1)) {
-                Color col = collision.GetComponent<SpriteRenderer>().color;
-                col = new Color(col.r, col.g, col.b, col.a / 2);
-                collision.GetComponent<SpriteRenderer>().color = col;
-                collision.enabled = false;
-            }
-            if ((Input.GetKeyUp(KeybindingManager.hit1) || Input.GetKeyUp(KeybindingManager.hit2)) && !isDying && activeCubes.Contains(collision.gameObject)) {
-                Color col = collision.GetComponent<SpriteRenderer>().color;
-                col = new Color(col.r, col.g, col.b, col.a / 2);
-                collision.GetComponent<SpriteRenderer>().color = col;
-                collision.enabled = false;
-            }
-            if (!isBufferRunning && bufferActive)
-            {
-                StartCoroutine(OnTriggerEnter2DBufferLoop());
-            }
-            else
-            {
-                isBufferRunning = false;
-            }
-            }
-            else if (!(Input.GetKey(KeybindingManager.hit1) || Input.GetKey(KeybindingManager.hit2)) && !isDying)
-            {
-            bufferActive = false;
-            }
 
             if (collision.name == "finishline")
             {

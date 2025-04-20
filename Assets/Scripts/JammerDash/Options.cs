@@ -101,7 +101,6 @@ namespace JammerDash
         {
            SetLocale("en-US");
         
-            CheckForUpdate();
             audio = AudioManager.Instance;
             if (audio == null)
             {
@@ -773,58 +772,7 @@ namespace JammerDash
             }
         }
 
-        public async void CheckForUpdate()
-        {
-            string user = "pricklety";
-            string repo = "Jammer-Dash";
-            string url = $"https://api.github.com/repos/{user}/{repo}/releases/latest";
-
-            // GitHub API requires a user-agent header
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Jammer Dash");
-
-            try
-            {
-                HttpResponseMessage response = await client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                string responseBody = await response.Content.ReadAsStringAsync();
-
-                JObject release = JObject.Parse(responseBody);
-                string latestVersion = release["tag_name"].ToString();
-                string uploadDate = release["published_at"].ToString();
-                string releaseNotes = release["body"].ToString();
-
-
-                // Compare the latest version with the current version and notify if there's a new update available
-                if (IsNewVersionAvailable(latestVersion))
-                {
-                    // Create a UnityAction delegate for the update action
-                    UnityAction updateAction = () => OpenChangelog();
-                    UnityAction update = () => OpenUpdate(latestVersion);
-                    this.update.onClick.AddListener(update);
-                    changelogs.text = releaseNotes;
-                    updateName.text = $"{latestVersion}\n<size=6>{uploadDate}</size>";
-                    Notifications.instance.Notify($"There's a new update available! Version: {latestVersion}.\nClick to open changelogs and update.", updateAction);
-                }
-            }
-            catch (HttpRequestException e)
-            {
-                Debug.LogError("Error fetching the latest release: " + e.Message);
-            }
-        }
-
-        private bool IsNewVersionAvailable(string latestVersion)
-        {
-            string currentVersion = Application.version;
-            return latestVersion != currentVersion;
-        }
-        private void OpenChangelog()
-        {
-            nextChangelogs.SetActive(true);
-        }
-        private void OpenUpdate(string latestVersion)
-        {
-            Application.OpenURL($"https://github.com/Pricklety/Jammer-Dash/releases/download/{latestVersion}/Jammer.Dash.{latestVersion}.zip");
-        }
+       
     
         public void DisplayMusicInfo(AudioClip currentClip, float currentTime)
         {
